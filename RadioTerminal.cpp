@@ -24,11 +24,11 @@ namespace RadioTerminal
     int _irqPin;
     volatile uint32_t rx_controller;
 	
-	uint8_t channel = 56;
+	uint8_t channel = 38;
 	uint8_t controller = 0;
-	uint32_t controllerBaseAddress = 0x000100;
-	uint32_t rxAddress = 0x010000;
-	uint32_t txAddress = 0x010001;
+	uint32_t controllerBaseAddress = 0x0001a4;
+	uint32_t rxAddress = 0xd091bb;
+	uint32_t txAddress = 0xe7e1fa;
 	
 	char inputBuffer[INPUT_BUFFER_MAX];
 	CmdHandler* runningCmd;
@@ -65,7 +65,7 @@ namespace RadioTerminal
         
         // Set up SPI
         SPI.begin();
-        SPI.setClockDivider(SPI_CLOCK_DIV2);
+        SPI.setClockDivider(SPI_CLOCK_DIV8);
         
         // Set up IRQ
         attachInterrupt(irqPin, receive, FALLING);
@@ -107,7 +107,7 @@ namespace RadioTerminal
         // Set addresses
         digitalWrite(_csnPin, 0);
         SPI.transfer(W_REGISTER | RX_ADDR_P0);
-        SPI.transfer(controller);
+        SPI.transfer(controller & 0x0f);
         SPI.transfer((controllerBaseAddress >>  8) & 0xff);
         SPI.transfer((controllerBaseAddress >> 16) & 0xff);
         digitalWrite(_csnPin, 1);
@@ -135,6 +135,8 @@ namespace RadioTerminal
         digitalWrite(_csnPin, 0);
         SPI.transfer(FLUSH_RX);
         digitalWrite(_csnPin, 1);
+		
+		write("\n> ");
     }
 	
 	
@@ -272,6 +274,7 @@ namespace RadioTerminal
 				{
 					if ( ((data>>(8*i)) & 0xff) == '\0') break;
 					receiveChar( (char)((data>>(8*i)) & 0xff) );
+					Serial.println((char)((data>>(8*i)) & 0xff));
 				}
                 break;
                 
@@ -379,31 +382,15 @@ namespace RadioTerminal
 
 	void write(const char* string)
 	{
-		const int maxsize = 1000;
-		uint32_t data;
+		const int maxsize = 256;
 		int i = 0;
 		
-		// Send string across radio link 4 characters at a time
+		// Send string across radio link 1 character at a time
 		while (i < maxsize)
 		{
-			data = 0;
-			
-			for (int j = 0; j < 4; ++j)
-			{
-				if (string[i+j] == '\0')
-				{
-					transmit(data);
-					return;
-				}
-				
-				data |= ((uint32_t) string[i+j]) << (j*8);
-			}
-			
-			i += 4;
-			transmit(data);
+			if (string[i] == '\0') break;
+			delayMicroseconds(20);
+			transmit(string[i++]);
 		}
-		
-		// If maxsize is reached before a terminator is found, make sure than the sent string is null terminated
-		transmit(0);
 	}
 }

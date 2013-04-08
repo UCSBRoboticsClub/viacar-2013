@@ -24,7 +24,7 @@ namespace RadioTerminal
     int _irqPin;
     volatile uint32_t rx_controller;
 	
-	uint8_t channel = 38;
+	uint8_t channel = 56;
 	uint8_t controller = 0;
 	uint32_t controllerBaseAddress = 0x0001a4;
 	uint32_t rxAddress = 0xd091bb;
@@ -107,7 +107,7 @@ namespace RadioTerminal
         // Set addresses
         digitalWrite(_csnPin, 0);
         SPI.transfer(W_REGISTER | RX_ADDR_P0);
-        SPI.transfer(controller & 0x0f);
+        SPI.transfer((controllerBaseAddress & 0xff) + (controller & 0xf));
         SPI.transfer((controllerBaseAddress >>  8) & 0xff);
         SPI.transfer((controllerBaseAddress >> 16) & 0xff);
         digitalWrite(_csnPin, 1);

@@ -1,0 +1,1 @@
+#define EA_EEPROM_PROGFLAG 0x00

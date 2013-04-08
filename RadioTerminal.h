@@ -29,7 +29,6 @@ namespace RadioTerminal
 	
 	extern uint8_t controller;
 	extern uint8_t channel;
-	extern uint32_t robotAddress;
 	extern uint32_t controllerBaseAddress;
 	extern uint32_t rxAddress;
 	extern uint32_t txAddress;

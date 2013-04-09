@@ -23,6 +23,45 @@ const float period = 0.02f;
 
 
 
+CmdHandler* setkp(const char* input)
+{
+    char output[256];
+    
+    sscanf(input, "kp %f", &kp);
+    sprintf(output, "kp = %f", kp);
+    RadioTerminal::write(output);
+    
+    return NULL;
+}
+
+
+
+CmdHandler* setki(const char* input)
+{
+    char output[256];
+    
+    sscanf(input, "ki %f", &ki);
+    sprintf(output, "ki = %f", ki);
+    RadioTerminal::write(output);
+    
+    return NULL;
+}
+
+
+
+CmdHandler* setkd(const char* input)
+{
+    char output[256];
+    
+    sscanf(input, "kd %f", &kd);
+    sprintf(output, "kd = %f", kd);
+    RadioTerminal::write(output);
+    
+    return NULL;
+}
+
+
+
 float getError()
 {
 	float v1 = analogRead(A2)/4096.0f;
@@ -53,6 +92,10 @@ void setup()
     RadioTerminal::initialize(10, 14, 15);
     RadioTerminal::reset();
 	
+	RadioTerminal::addCommand("kp", &setkp);
+	RadioTerminal::addCommand("ki", &setki);
+	RadioTerminal::addCommand("kd", &setkd);
+	
 	analogReadRes(12);
 	analogReference(INTERNAL);
 	analogReadAveraging(16);
@@ -61,6 +104,10 @@ void setup()
 	c2 = 1.0f;
 	hsq = 0.02f;
 	d = 0.1f;
+	
+	kp = 1.0f;
+	ki = 0.5f;
+	kd = 0.01f;
 	
 	msstart = millis();
 }

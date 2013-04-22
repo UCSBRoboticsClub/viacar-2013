@@ -18,7 +18,7 @@ int msstart;
 
 float kp, ki, kd;
 float v1, v2, x1, x2;
-float c1, c2, hsq1, hsq2, d;
+float hsq1, hsq2, d;
 float error, ierror, derror;
 CircularBuffer<float, 2> prevError;
 const float period = 0.02f;
@@ -42,21 +42,33 @@ float* WatchHandler::watch;
 CmdHandler* watch(const char* input)
 {
     // Read command parameters
-    if (!strncmp(input, "watch v1", 8))
+    if (!strncmp(input, "w v1", 8))
     {
         return new WatchHandler(&v1);
     }
-	else if (!strncmp(input, "watch v2", 8))
+	else if (!strncmp(input, "w v2", 8))
     {
         return new WatchHandler(&v2);
     }
-	else if (!strncmp(input, "watch x1", 8))
+	else if (!strncmp(input, "w x1", 8))
     {
         return new WatchHandler(&x1);
     }
-	else if (!strncmp(input, "watch x2", 8))
+	else if (!strncmp(input, "w x2", 8))
     {
         return new WatchHandler(&x2);
+    }
+	else if (!strncmp(input, "w error", 8))
+    {
+        return new WatchHandler(&error);
+    }
+	else if (!strncmp(input, "w ierror", 8))
+    {
+        return new WatchHandler(&ierror);
+    }
+	else if (!strncmp(input, "w derror", 8))
+    {
+        return new WatchHandler(&derror);
     }
     else
     {
@@ -125,13 +137,52 @@ CmdHandler* setkd(const char* input)
 
 
 
+CmdHandler* sethsq1(const char* input)
+{
+    char output[256];
+    
+    sscanf(input, "hsq1 %f", &hsq1);
+    sprintf(output, "hsq1 = %f", hsq1);
+    RadioTerminal::write(output);
+    
+    return NULL;
+}
+
+
+
+CmdHandler* sethsq2(const char* input)
+{
+    char output[256];
+    
+    sscanf(input, "hsq2 %f", &hsq2);
+    sprintf(output, "hsq2 = %f", hsq2);
+    RadioTerminal::write(output);
+    
+    return NULL;
+}
+
+
+
+CmdHandler* setd(const char* input)
+{
+    char output[256];
+    
+    sscanf(input, "d %f", &d);
+    sprintf(output, "d = %f", d);
+    RadioTerminal::write(output);
+    
+    return NULL;
+}
+
+
+
 float getError(float predicted)
 {
 	v1 = analogRead(A2)/4096.0f;
 	v2 = analogRead(A3)/4096.0f;
 	
-	x1 = sqrt(pos(c1/v1 - hsq1));
-	x2 = sqrt(pos(c2/v2 - hsq2));
+	x1 = sqrt(pos(hsq1/v1 - hsq1));
+	x2 = sqrt(pos(hsq2/v2 - hsq2));
 	
 	float daa = abs(d + x1 - x2);
 	float dab = abs(d + x1 + x2);
@@ -145,8 +196,8 @@ float getError(float predicted)
 	
 	float eaa = abs(abs(aa) - predicted);
 	float eab = abs(abs(ab) - predicted);
-	float eaa = abs(abs(ba) - predicted);
-	float eaa = abs(abs(bb) - predicted);
+	float eba = abs(abs(ba) - predicted);
+	float ebb = abs(abs(bb) - predicted);
 	
 	float taa = daa + eaa;
 	float tab = dab + eab;
@@ -179,15 +230,16 @@ float getError(float predicted)
 
 void setup()
 {
-	Serial.begin(115200);
-	
     RadioTerminal::initialize(10, 14, 15);
     RadioTerminal::reset();
 	
 	RadioTerminal::addCommand("kp", &setkp);
 	RadioTerminal::addCommand("ki", &setki);
 	RadioTerminal::addCommand("kd", &setkd);
-	RadioTerminal::addCommand("watch", &watch);
+	RadioTerminal::addCommand("hsq1", &sethsq1);
+	RadioTerminal::addCommand("hsq2", &sethsq2);
+	RadioTerminal::addCommand("d", &setd);
+	RadioTerminal::addCommand("w", &watch);
 	
 	analogReadRes(12);
 	analogReference(INTERNAL);
@@ -195,8 +247,6 @@ void setup()
 	
 	hsq1 = 4.0f;
 	hsq2 = 4.0f;
-	c1 = hsq1;
-	c2 = hsq2;
 	d = 0.1f;
 	
 	kp = 1.0f;
@@ -223,7 +273,7 @@ void loop()
 	// Use manual steering if a controller message is present
 	if (RadioTerminal::rx_controller != 0)
 	{
-		turn = 0.0078125f * deadzone((int8_t)((RadioTerminal::rx_controller>>0)&0xff), 8); // Convert to +/-1.0f range
+		turn = 0.0078125f * deadzone((int8_t)((RadioTerminal::rx_controller>>16)&0xff), 8); // Convert to +/-1.0f range
 		throttle = -0.0078125f * deadzone((int8_t)((RadioTerminal::rx_controller>>8)&0xff), 8);
 	}
 	else
